@@ -17,7 +17,7 @@ begin
 			set @ErrorMessage = 'Ошибка при загрузке файла, проверьте корректность данных'
 
 			raiserror(@ErrorMessage, 3, 1)
-			return                                                                                                   -- Пустая строка перед return
+			return                                                                                                   -- Пустая строка перед return нет
 		end
 
 	CREATE TABLE #ProcessedRows (                                                                                    -- Таблицы именуются  по правилу {схема} . {Название}[_Постфикс] или {Название} может быть составлено из [Код источника_] + {Тип данных}
@@ -34,8 +34,8 @@ begin
 		,cast(cs.DateEnd as date) as DateEnd
 		,cd.ID as ID_dbo_CustomerDistributor
 		,cast(isnull(cs.FlagActive, 0) as bit) as FlagActive
-	into #CustomerSeasonal                                                                                           -- Таблицы именуются  по правилу {схема} . {Название}[_Постфикс] или {Название} может быть составлено из [Код источника_] + {Тип данных}
-	from syn.SA_CustomerSeasonal cs                                                                                  -- Алиас обязателен для объекта и задается с помощью ключевого слова as
+	into #CustomerSeasonal
+	from syn.SA_CustomerSeasonal cs                                                                                  -- Алиас обязателен для объекта и задается с помощью ключевого слова as , нет ключевого слова
 		join dbo.Customer as cc on cc.UID_DS = cs.UID_DS_Customer
 			and cc.ID_mapping_DataSource = 1
 		join dbo.Season as s on s.Name = cs.Season
@@ -58,14 +58,14 @@ begin
 			when try_cast(cs.DateBegin as date) is null then 'Невозможно определить Дату начала'
 			when try_cast(cs.DateEnd as date) is null then 'Невозможно определить Дату начала'
 			when try_cast(isnull(cs.FlagActive, 0) as bit) is null then 'Невозможно определить Активность'
-		end as Reason                                                                                                -- Таблицы именуются  по правилу {схема} . {Название}[_Постфикс] или {Название} может быть составлено из [Код источника_] + {Тип данных}
+		end as Reason
 	into #BadInsertedRows
 	from syn.SA_CustomerSeasonal as cs
 	left join dbo.Customer as cc on cc.UID_DS = cs.UID_DS_Customer                                                   -- Все виды join пишутся с 1 отступом
 		and cc.ID_mapping_DataSource = 1
-	left join dbo.Customer as cd on cd.UID_DS = cs.UID_DS_CustomerDistributor and cd.ID_mapping_DataSource = 1       -- Если есть and , то выравнивать его на 1 табуляцию от join         --Все виды join пишутся с 1 отступом
-	left join dbo.Season as s on s.Name = cs.Season                                                                  -- Все виды join пишутся с 1 отступом
-	left join syn.CustomerSystemType as cst on cst.Name = cs.CustomerSystemType                                      -- Все виды join пишутся с 1 отступом
+	left join dbo.Customer as cd on cd.UID_DS = cs.UID_DS_CustomerDistributor and cd.ID_mapping_DataSource = 1       -- Если есть and , то выравнивать его на 1 табуляцию от join
+	left join dbo.Season as s on s.Name = cs.Season
+	left join syn.CustomerSystemType as cst on cst.Name = cs.CustomerSystemType
 	where cc.ID is null
 		or cd.ID is null
 		or s.ID is null
