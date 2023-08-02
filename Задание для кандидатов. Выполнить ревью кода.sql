@@ -3,24 +3,24 @@ create procedure syn.usp_ImportFileCustomerSeasonal
 as
 set nocount on
 begin
-	declare @RowCount int = (select count(*) from syn.SA_CustomerSeasonal)                                           -- Для объявления переменных declare используется один раз.     --Алиас обязателен для объекта
-	declare @ErrorMessage varchar(max)                                                                               -- Рекомендуется при объявлении типов не использовать длину поля max
+	declare @RowCount int = (select count(*) from syn.SA_CustomerSeasonal)
+	declare @ErrorMessage varchar(max)
 
 -- Проверка на корректность загрузки
 	if not exists (
-	select 1                                                                                                        --  Если выражение или запрос в отдельных скобках не умещаются на одной строке,  содержимое скобок начинается с новой строки, с одним отступом
-	from syn.ImportFile as f                                                                                         -- При наименовании алиаса использовать первые заглавные буквы каждого слова в названии объекта, которому дают алиас
+	select 1
+	from syn.ImportFile as f
 	where f.ID = @ID_Record
 		and f.FlagLoaded = cast(1 as bit)
-	)                                                                                                                -- Пустые строки между логическими блоками
-		begin                                                                                                        -- На одном уровне с `if` и `begin/end`
+	)
+		begin
 			set @ErrorMessage = 'Ошибка при загрузке файла, проверьте корректность данных'
 
 			raiserror(@ErrorMessage, 3, 1)
-			return                                                                                                   -- Пустая строка перед return нет
+			return
 		end
 
-	CREATE TABLE #ProcessedRows (                                                                                    -- Таблицы именуются  по правилу {схема} . {Название}[_Постфикс] или {Название} может быть составлено из [Код источника_] + {Тип данных}
+	CREATE TABLE #ProcessedRows (
 		ActionType varchar(255),
 		ID int
 	)
@@ -35,13 +35,13 @@ begin
 		,cd.ID as ID_dbo_CustomerDistributor
 		,cast(isnull(cs.FlagActive, 0) as bit) as FlagActive
 	into #CustomerSeasonal
-	from syn.SA_CustomerSeasonal cs                                                                                  -- Алиас обязателен для объекта и задается с помощью ключевого слова as , нет ключевого слова
+	from syn.SA_CustomerSeasonal cs
 		join dbo.Customer as cc on cc.UID_DS = cs.UID_DS_Customer
 			and cc.ID_mapping_DataSource = 1
 		join dbo.Season as s on s.Name = cs.Season
 		join dbo.Customer as cd on cd.UID_DS = cs.UID_DS_CustomerDistributor
 			and cd.ID_mapping_DataSource = 1
-		join syn.CustomerSystemType as cst on cs.CustomerSystemType = cst.Name                                       -- При соединение двух таблиц, сперва после on указываем поле присоединяемой таблицы
+		join syn.CustomerSystemType as cst on cs.CustomerSystemType = cst.Name
 	where try_cast(cs.DateBegin as date) is not null
 		and try_cast(cs.DateEnd as date) is not null
 		and try_cast(isnull(cs.FlagActive, 0) as bit) is not null
@@ -51,7 +51,7 @@ begin
 	select
 		cs.*
 		,case
-			when cc.ID is null then 'UID клиента отсутствует в справочнике "Клиент"'                                 -- Результат на 1 отступ от when
+			when cc.ID is null then 'UID клиента отсутствует в справочнике "Клиент"'
 			when cd.ID is null then 'UID дистрибьютора отсутствует в справочнике "Клиент"'
 			when s.ID is null then 'Сезон отсутствует в справочнике "Сезон"'
 			when cst.ID is null then 'Тип клиента в справочнике "Тип клиента"'
@@ -61,9 +61,9 @@ begin
 		end as Reason
 	into #BadInsertedRows
 	from syn.SA_CustomerSeasonal as cs
-	left join dbo.Customer as cc on cc.UID_DS = cs.UID_DS_Customer                                                   -- Все виды join пишутся с 1 отступом
+	left join dbo.Customer as cc on cc.UID_DS = cs.UID_DS_Customer
 		and cc.ID_mapping_DataSource = 1
-	left join dbo.Customer as cd on cd.UID_DS = cs.UID_DS_CustomerDistributor and cd.ID_mapping_DataSource = 1       -- Если есть and , то выравнивать его на 1 табуляцию от join
+	left join dbo.Customer as cd on cd.UID_DS = cs.UID_DS_CustomerDistributor and cd.ID_mapping_DataSource = 1
 	left join dbo.Season as s on s.Name = cs.Season
 	left join syn.CustomerSystemType as cst on cst.Name = cs.CustomerSystemType
 	where cc.ID is null
